@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Configuration;
 
 namespace JWTAuthentication.Controllers
 {
@@ -15,35 +16,66 @@ namespace JWTAuthentication.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        [HttpPost("token")]
-        public ActionResult GetToken()
+        private IConfiguration configuration;
+
+        public AuthController(IConfiguration iconfig)
         {
-            //Security Key
-            string securityKey = "This is my security key";
+            configuration = iconfig;
+        }
 
-            //Symmetric security key
-            var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(securityKey));
+        [HttpPost("token")]
+        public ActionResult GetToken(string username, string password)
+        {
 
-            //signing credientials
-            var signingCredientials = new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256Signature);
+            if (ValidateLogin(username, password))
+            {
+                //Security Key
+                //string securityKey = "This is my security key";
+                string securityKey = configuration.GetSection("Jwt").GetSection("SymmentricKey").Value;
 
-            //create claims
-            var claims = new List<Claim>();
-            claims.Add(new Claim(ClaimTypes.Role, "Administrator"));
+                //Symmetric security key
+                //var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(securityKey));
+                var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(securityKey));
 
-            //create token
-            var token = new JwtSecurityToken(
-                    issuer: "banu.lk",
-                    audience: "readers",
-                    expires: DateTime.Now.AddHours(1),
-                    signingCredentials: signingCredientials,
-                    claims: claims
-                    );
+                //signing credientials
+                var signingCredientials = new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256Signature);
 
-            //return token
-            return Ok(new JwtSecurityTokenHandler().WriteToken(token));
+                //create claims
+                var claims = new List<Claim>();
+                claims.Add(new Claim(ClaimTypes.Role, "Administrator"));
+
+                //create token
+                var token = new JwtSecurityToken(
+                        issuer: configuration.GetSection("Jwt").GetSection("Issuer").Value,
+                        audience: configuration.GetSection("Jwt").GetSection("Audience").Value,
+                        expires: DateTime.Now.AddHours(1),
+                        signingCredentials: signingCredientials,
+                        claims: claims
+                        );
+
+                //return token
+                return Ok(new JwtSecurityTokenHandler().WriteToken(token));
 
 
+            }
+            else
+            {
+                return BadRequest("Invalid credientials");
+            }
+
+
+        }
+
+        private bool ValidateLogin(string username, string password)
+        {
+            if(username == "Banu" && password == "password")
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

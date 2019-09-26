@@ -30,7 +30,7 @@ namespace JWTAuthentication
         public void ConfigureServices(IServiceCollection services)
         {
             //Security Key
-            string securityKey = "This is my security key";
+            string securityKey = Configuration["Jwt:SymmentricKey"];
 
             //Symmetric security key
             var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(securityKey));
@@ -47,9 +47,9 @@ namespace JWTAuthentication
                             ValidateAudience = true,
                             ValidateIssuerSigningKey = true,
 
-                            //setup validate data
-                            ValidIssuer = "banu.lk",
-                            ValidAudience = "readers",
+                            //setup validate data SymmentricKey
+                            ValidIssuer = Configuration["Jwt:Issuer"],
+                            ValidAudience = Configuration["Jwt:Audience"],
                             IssuerSigningKey = symmetricSecurityKey
                         };
                     }
